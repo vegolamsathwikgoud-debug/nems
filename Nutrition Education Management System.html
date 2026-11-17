@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nutrition Education Management System (NEMS)</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.1/dist/umd/lucide.min.js"></script>
+<style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{background:#f8fafc}</style>
+</head>
+<body class="text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+<header class="bg-emerald-700 text-white shadow-md">
+  <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+    <div class="flex items-center space-x-3">
+      <i data-lucide="apple" class="w-8 h-8 text-emerald-300"></i>
+      <div><h1 class="text-xl font-bold">Nutrition Education Management System</h1>
+      <p class="text-xs text-emerald-200">CSE326 (GC) | Faculty IDs: 43, 46, 60</p></div>
+    </div>
+    <span class="text-xs bg-emerald-800 px-3 py-1 rounded-full text-emerald-100 hidden sm:inline-block">Team: Sathwik, Naveen, Ayisha</span>
+  </div>
+</header>
+<div id="toasts" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+<div class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full grid grid-cols-1 md:grid-cols-4 gap-6">
+  <nav id="nav" class="md:col-span-1 bg-white p-4 rounded-xl shadow-sm border border-slate-200 h-fit space-y-1"></nav>
+  <main id="main" class="md:col-span-3"></main>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DEFAULT={
+ content:[{id:1,title:'Balanced Diet & Food Pyramid Guide',category:'Fundamentals',format:'PDF Guide'},{id:2,title:'Macronutrients & Micronutrients Breakdown',category:'Science',format:'Infographic'},{id:3,title:'Hydration & Metabolic Wellness',category:'Wellness',format:'Video'}],
+ sessions:[{id:1,title:'Nutritional Planning 101',educator:'Dr. Ananya Sharma',date:'2026-11-22',time:'10:00',capacity:30},{id:2,title:'Community Micronutrient Workshop',educator:'Dr. Ramesh Kumar',date:'2026-11-25',time:'14:00',capacity:25}],
+ participants:[{name:'Rahul Verma',email:'rahul@example.com',phone:'+91 98765 43210',session:'Nutritional Planning 101',present:true},{name:'Priya Singh',email:'priya@example.com',phone:'+91 91234 56789',session:'Community Micronutrient Workshop',present:true},{name:'Amit Patel',email:'amit@example.com',phone:'+91 99887 76655',session:'Nutritional Planning 101',present:false}],
+ resources:[{title:'Weekly Balanced Meal Planner',type:'Worksheet'},{title:'Essential Vitamins & Sources Chart',type:'Poster'},{title:'Portion Control Daily Tracker',type:'Template'},{title:'ICMR Dietary Guidelines Summary',type:'Learning Material'}],
+ feedback:[{user:'Rahul Verma',rating:5,comment:'Very practical meal planning breakdown!'},{user:'Priya Singh',rating:4,comment:'Helpful worksheets and clear session flow.'}],
+ quiz:[{t:'Initial Baseline',score:4,total:5}]
+};
+const KEY='nems-state-v1';
+let state=load();
+function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r)}catch(e){}return JSON.parse(JSON.stringify(DEFAULT))}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+const QS=[["Which macronutrient is the body's primary source of quick energy?",["Proteins","Carbohydrates","Fats"],1],["Which vitamin is synthesized in the skin upon sunlight exposure?",["Vitamin C","Vitamin D","Vitamin B12"],1],["Iron deficiency most commonly leads to which condition?",["Anemia","Scurvy","Rickets"],0],["Dietary fiber primarily supports which bodily system?",["Digestive System","Skeletal System","Auditory System"],0],["Which mineral is essential for strong bones and teeth?",["Sodium","Calcium","Iodine"],1]];
+const TABS=[['summary','layout-dashboard','8. Progress Summary'],['content','book-open','1. Content Library'],['sessions','calendar','2. Session Scheduling'],['participants','users','3. Participant Registration'],['resources','folder-open','4. Resources'],['quizzes','help-circle','5. Quizzes / Check-ins'],['attendance','check-square','6. Attendance'],['feedback','message-square','7. Feedback'],['admin','shield-alert','9. Admin Controls']];
+const inp='px-3 py-2 border border-slate-300 rounded-lg text-sm w-full';
+const btn='bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition';
+const card=(h,p,b)=>`<div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4"><div><h2 class="text-lg font-bold">${h}</h2><p class="text-sm text-slate-500">${p}</p></div>${b}</div>`;
+const form=(h,cols,fields,sub)=>`<form onsubmit="${h}(event)" class="grid grid-cols-1 sm:grid-cols-${cols} gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">${fields}<button class="${btn}">${sub}</button></form>`;
+const table=(heads,id)=>`<div class="overflow-x-auto"><table class="w-full text-left text-sm text-slate-600"><thead class="bg-slate-100 text-xs uppercase text-slate-700"><tr>${heads.map(h=>`<th class="p-3">${h}</th>`).join('')}</tr></thead><tbody id="${id}" class="divide-y divide-slate-200"></tbody></table></div>`;
+const opts=a=>a.map(o=>`<option>${o}</option>`).join('');
+const CATS=['Fundamentals','Science','Wellness'];
+
+function build(){
+ $('nav').innerHTML='<p class="text-xs font-semibold text-slate-400 uppercase px-3 mb-2">Core Modules</p>'+TABS.map(([id,ic,l])=>`<button id="b-${id}" onclick="tab('${id}')" class="nb w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"><i data-lucide="${ic}" class="w-4 h-4"></i><span>${l}</span></button>`).join('');
+ const sum=(c,t,i,s)=>`<div class="bg-${c}-50 p-4 rounded-xl border border-${c}-100"><p class="text-xs font-semibold text-${c}-700 uppercase">${t}</p><p class="text-2xl font-bold text-${c}-900 mt-1" id="${i}"></p><p class="text-xs text-${c}-600 mt-1" id="${i}-s">${s||''}</p></div>`;
+ const P={
+ summary:card('Progress Summary Dashboard','Live attendance, quiz, feedback and resource figures.',`<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">${sum('emerald','Attendance Rate','s-att')}${sum('blue','Latest Quiz Score','s-quiz')}${sum('amber','Avg Feedback','s-fb')}${sum('purple','Total Resources','s-res','Worksheets & Guides')}</div>`),
+ content:card('Content Library','Search, filter, add and delete educational content.',`<div class="flex gap-2"><input id="c-q" oninput="rContent()" placeholder="Search title..." class="${inp}"><select id="c-f" onchange="rContent()" class="${inp}"><option>All</option>${opts(CATS)}</select></div>${form('addContent',4,`<input id="n-t" required placeholder="Content Title" class="${inp}"><select id="n-c" class="${inp}">${opts(CATS)}</select><input id="n-f" required placeholder="Format (PDF, Video)" class="${inp}">`,'Add Content')}${table(['Title','Category','Format',''],'c-body')}`),
+ sessions:card('Session Scheduling','Title, educator, date, time, capacity and status.',`${form('addSession',3,`<input id="s-t" required placeholder="Session Title" class="${inp}"><input id="s-e" required placeholder="Educator" class="${inp}"><input id="s-d" type="date" required class="${inp}"><input id="s-h" type="time" required class="${inp}"><input id="s-c" type="number" min="1" required placeholder="Capacity" class="${inp}">`,'Schedule Session')}<div id="s-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>`),
+ participants:card('Participant Registration','Name, email, phone and session mapping (capacity enforced).',`${form('addPart',5,`<input id="p-n" required placeholder="Full Name" class="${inp}"><input id="p-e" type="email" required placeholder="Email" class="${inp}"><input id="p-p" required placeholder="Phone" class="${inp}"><select id="p-s" class="${inp}"></select>`,'Register')}${table(['Name','Email','Phone','Session'],'p-body')}`),
+ resources:card('Resources Repository','Worksheets, posters, templates and learning materials.','<div id="r-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>'),
+ quizzes:card('Quizzes & Check-ins','5-question knowledge check with attempt history.','<form id="q-form" onsubmit="submitQuiz(event)" class="space-y-5 bg-slate-50 p-6 rounded-xl border border-slate-200"></form><div><h3 class="font-semibold mb-2">Attempt History</h3><div id="q-hist" class="space-y-2 text-sm"></div></div>'),
+ attendance:card('Attendance Tracking','Present/absent controls, saved in your browser.',`<div id="a-list" class="space-y-3"></div><button onclick="toast('Attendance saved');sumUp()" class="${btn}">Save Attendance</button>`),
+ feedback:card('Session Feedback','Ratings, comments, count and average.',`<div class="text-right"><span class="text-xl font-bold text-amber-800" id="f-avg"></span><span class="text-sm text-amber-600">/5.0</span> <span class="text-xs text-amber-700" id="f-n"></span></div>${form('addFb',4,`<input id="f-u" required placeholder="Your Name" class="${inp}"><select id="f-r" class="${inp}"><option value="5">5 - Excellent</option><option value="4">4 - Good</option><option value="3">3 - Average</option><option value="2">2 - Fair</option><option value="1">1 - Poor</option></select><input id="f-c" required placeholder="Comment..." class="${inp}">`,'Submit')}<div id="f-list" class="space-y-3"></div>`),
+ admin:card('Admin Controls','Roles, governance and demo data reset.',`<table class="w-full text-left text-sm text-slate-600"><thead class="bg-slate-100 text-xs uppercase"><tr><th class="p-3">Member</th><th class="p-3">Reg. No.</th><th class="p-3">Role</th></tr></thead><tbody class="divide-y"><tr><td class="p-3 font-medium">V. Sathwik</td><td class="p-3">12601214</td><td class="p-3 text-emerald-700">Progress Summary, Admin Controls & Architecture</td></tr><tr><td class="p-3 font-medium">G. Naveen</td><td class="p-3">12617123</td><td class="p-3 text-emerald-700">Content Library, Resources & Session Scheduling</td></tr><tr><td class="p-3 font-medium">Th. Ayisha</td><td class="p-3">12608233</td><td class="p-3 text-emerald-700">Participant Registration, Attendance, Quizzes & Feedback</td></tr></tbody></table><p class="text-xs text-slate-600 bg-slate-50 p-4 rounded-xl border">Role-based access ensures only authorized educators can publish verified nutrition guidelines and modify attendance logs, while administrators maintain data integrity and can restore baseline demo data.</p><button onclick="resetData()" class="bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-rose-700">Reset Demo Data to Default</button>`)
+ };
+ $('main').innerHTML=TABS.map(([id])=>`<div id="t-${id}" class="tp hidden">${P[id]}</div>`).join('');
+}
+function tab(id){document.querySelectorAll('.tp').forEach(e=>e.classList.add('hidden'));$('t-'+id).classList.remove('hidden');document.querySelectorAll('.nb').forEach(b=>{b.classList.remove('bg-emerald-50','text-emerald-700');b.classList.add('text-slate-600')});const a=$('b-'+id);a.classList.add('bg-emerald-50','text-emerald-700');a.classList.remove('text-slate-600');try{history.replaceState(null,'','#'+id)}catch(e){}}
+function toast(m){const t=document.createElement('div');t.className='bg-slate-900 text-white text-xs px-4 py-3 rounded-lg shadow-lg';t.textContent=m;$('toasts').appendChild(t);setTimeout(()=>t.remove(),2500)}
+const cnt=s=>state.participants.filter(p=>p.session===s).length;
+function sumUp(){const n=state.participants.length,p=state.participants.filter(x=>x.present).length;$('s-att').textContent=(n?Math.round(p/n*100):0)+'%';$('s-att-s').textContent=`${p} / ${n} Present`;const q=state.quiz[state.quiz.length-1];$('s-quiz').textContent=q?`${q.score}/${q.total}`:'N/A';$('s-quiz-s').textContent=state.quiz.length+' Attempt(s)';const f=state.feedback.length;$('s-fb').textContent=(f?(state.feedback.reduce((a,b)=>a+b.rating,0)/f).toFixed(1):'0.0')+' / 5';$('s-fb-s').textContent=f+' Responses';$('s-res').textContent=state.resources.length}
+function rContent(){const q=$('c-q').value.toLowerCase(),c=$('c-f').value;$('c-body').innerHTML=state.content.filter(x=>x.title.toLowerCase().includes(q)&&(c==='All'||x.category===c)).map(x=>`<tr><td class="p-3 font-medium text-slate-800">${esc(x.title)}</td><td class="p-3"><span class="text-xs bg-slate-100 px-2 py-1 rounded">${esc(x.category)}</span></td><td class="p-3">${esc(x.format)}</td><td class="p-3 text-right"><button onclick="delContent(${x.id})" class="text-rose-600 text-xs font-semibold">Delete</button></td></tr>`).join('')}
+function addContent(e){e.preventDefault();state.content.push({id:Date.now(),title:$('n-t').value,category:$('n-c').value,format:$('n-f').value});e.target.reset();save();rContent();toast('Content added')}
+function delContent(id){state.content=state.content.filter(x=>x.id!==id);save();rContent();toast('Content removed')}
+function rSessions(){$('s-grid').innerHTML=state.sessions.map(s=>{const f=cnt(s.title)>=s.capacity;return`<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1"><div class="flex justify-between"><h3 class="font-semibold">${esc(s.title)}</h3><span class="text-xs ${f?'bg-rose-100 text-rose-800':'bg-emerald-100 text-emerald-800'} px-2 py-0.5 rounded-full">${f?'Full':'Open'}</span></div><p class="text-xs">Educator: ${esc(s.educator)}</p><p class="text-xs">${esc(s.date)} at ${esc(s.time)}</p><p class="text-xs">Seats: ${cnt(s.title)} / ${s.capacity}</p></div>`}).join('');$('p-s').innerHTML=state.sessions.map(s=>`<option>${esc(s.title)}</option>`).join('')}
+function addSession(e){e.preventDefault();state.sessions.push({id:Date.now(),title:$('s-t').value,educator:$('s-e').value,date:$('s-d').value,time:$('s-h').value,capacity:parseInt($('s-c').value,10)});e.target.reset();save();rSessions();toast('Session scheduled')}
+function rParts(){$('p-body').innerHTML=state.participants.map(p=>`<tr><td class="p-3 font-medium text-slate-800">${esc(p.name)}</td><td class="p-3">${esc(p.email)}</td><td class="p-3">${esc(p.phone)}</td><td class="p-3"><span class="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded">${esc(p.session)}</span></td></tr>`).join('')}
+function addPart(e){e.preventDefault();const em=$('p-e').value.trim().toLowerCase(),s=$('p-s').value,sess=state.sessions.find(x=>x.title===s);if(!sess)return toast('Schedule a session first');if(state.participants.some(p=>p.email.toLowerCase()===em&&p.session===s))return toast('Already registered for this session');if(cnt(s)>=sess.capacity)return toast('Session is full');state.participants.push({name:$('p-n').value,email:em,phone:$('p-p').value,session:s,present:false});e.target.reset();save();rParts();rAtt();rSessions();sumUp();toast('Participant registered')}
+function rRes(){$('r-grid').innerHTML=state.resources.map(r=>`<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex justify-between items-center"><div><h3 class="font-semibold text-sm">${esc(r.title)}</h3><span class="text-xs text-purple-700 bg-purple-100 px-2 py-0.5 rounded">${esc(r.type)}</span></div><button onclick="toast('Download started')" class="text-emerald-700 text-xs font-semibold bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">Download</button></div>`).join('')}
+function rQuiz(){$('q-form').innerHTML=QS.map((q,i)=>`<div class="space-y-2"><p class="text-sm font-semibold">${i+1}. ${q[0]}</p>${q[1].map((o,j)=>`<label class="flex items-center space-x-2 text-sm pl-2"><input type="radio" name="q${i}" value="${j}" required><span>${o}</span></label>`).join('')}</div>`).join('')+`<button class="${btn}">Submit Check-in Quiz</button>`;rHist()}
+function submitQuiz(e){e.preventDefault();let s=0;QS.forEach((q,i)=>{if(+document.querySelector(`input[name=q${i}]:checked`).value===q[2])s++});state.quiz.push({t:new Date().toLocaleTimeString(),score:s,total:QS.length});save();rHist();sumUp();toast(`Score: ${s}/${QS.length}`)}
+function rHist(){$('q-hist').innerHTML=state.quiz.map((a,i)=>`<div class="flex justify-between p-2.5 bg-slate-50 rounded-lg border"><span>Attempt #${i+1} (${esc(a.t)})</span><span class="font-bold text-emerald-700">${a.score} / ${a.total}</span></div>`).join('')}
+function rAtt(){$('a-list').innerHTML=state.participants.map((p,i)=>`<div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg border"><div><p class="text-sm font-medium">${esc(p.name)}</p><p class="text-xs text-slate-500">${esc(p.session)}</p></div><label class="flex items-center space-x-2 text-sm"><input type="checkbox" ${p.present?'checked':''} onchange="state.participants[${i}].present=this.checked;save();sumUp()"><span>Present</span></label></div>`).join('')}
+function rFb(){const n=state.feedback.length;$('f-avg').textContent=n?(state.feedback.reduce((a,b)=>a+b.rating,0)/n).toFixed(1):'0.0';$('f-n').textContent=n+' response(s)';$('f-list').innerHTML=state.feedback.map(f=>`<div class="p-4 bg-slate-50 rounded-xl border space-y-1"><div class="flex justify-between"><span class="font-semibold text-sm">${esc(f.user)}</span><span class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-semibold">${f.rating} / 5</span></div><p class="text-xs text-slate-600">${esc(f.comment)}</p></div>`).join('')}
+function addFb(e){e.preventDefault();state.feedback.push({user:$('f-u').value,rating:+$('f-r').value,comment:$('f-c').value});e.target.reset();save();rFb();sumUp();toast('Feedback submitted')}
+function resetData(){state=JSON.parse(JSON.stringify(DEFAULT));save();all();toast('Demo data restored')}
+function all(){rContent();rSessions();rParts();rRes();rQuiz();rAtt();rFb();sumUp();if(window.lucide)lucide.createIcons()}
+build();all();
+const h=location.hash.slice(1);tab(TABS.some(t=>t[0]===h)?h:'summary');
+</script>
+</body>
+</html>
