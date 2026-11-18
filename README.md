@@ -12,7 +12,7 @@ A single-page web app for managing nutrition education programs: content, sessio
 |---|---|---|
 | V. Sathwik | 12601214 | Progress Summary, Admin Controls & Architecture |
 | G. Naveen | 12617123 | Content Library, Resources & Session Scheduling |
-| Th. Ayisha | 12608233 | Participant Registration, Attendance, Quizzes & Feedback |
+|  Ayisha Thanism T H | 12608233 | Participant Registration, Attendance, Quizzes & Feedback |
 
 ## Modules
 
